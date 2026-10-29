@@ -14,6 +14,12 @@ def get_new_id():
     return max(post["id"] for post in POSTS) + 1
 
 
+def get_post_by_id(id):
+    post = [post for post in POSTS if post["id"] == id]
+    if len(post) > 0:
+        return post[0]
+
+
 @app.route("/api/posts", methods=["GET"])
 def get_posts():
     return jsonify(POSTS)
@@ -34,6 +40,16 @@ def add_post():
     new_post = {"id": new_id, "title": title, "content": content}
     POSTS.append(new_post)
     return jsonify(new_post)
+
+
+@app.route("/api/posts/<int:id>", methods=["DELETE"])
+def delete_post(id):
+    post = get_post_by_id(id)
+    if not post:
+        return jsonify({"error": f"Post with id {id} cannot be found"}), 404
+
+    POSTS.remove(post)
+    return jsonify({"message": f"Post with id {id} has been deleted sucessfully"}), 200
 
 
 if __name__ == "__main__":

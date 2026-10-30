@@ -27,7 +27,7 @@ def get_post_by_id(id):
 def get_filtered_posts(title_search, content_search):
     """
     Gets the filtered posts where the title includes the title_search or
-    the content includes the content_search. Both fields are optional
+    the content includes the content_search. Both fields are optional.
     """
 
     filtered_posts = []
@@ -44,11 +44,53 @@ def get_filtered_posts(title_search, content_search):
     return filtered_posts
 
 
+def get_sorted_posts(sort, direction):
+    """
+    Sorts the posts according to sort and direction and returns them.
+    """
+
+    sorted_posts = sorted(
+        POSTS, key=lambda post: post[sort], reverse=(direction == "desc")
+    )
+    return sorted_posts
+
+
 @app.route("/api/posts", methods=["GET"])
 def get_posts():
-    """Returns all posts"""
+    """
+    Returns all posts. Optional query parameters are sort and direction together.
+    Sort only accepts the values title and content for sorting the posts according
+    to the title or the content. Direction only accepts asc for ascending or desc
+    for descending. The use of onvalid sort fields or direction returns a statuscode 400.
+    """
 
-    return jsonify(POSTS)
+    sort = request.args.get("sort", "")
+    direction = request.args.get("direction", "")
+
+    if (sort and not direction) or (not sort and direction):
+        return (
+            jsonify(
+                {"error": "Query parameter sort and direction must be used together"}
+            ),
+            400,
+        )
+
+    if sort and not sort in ["title", "content"]:
+        return (
+            jsonify({"error": "Sort only supports the fields title and content"}),
+            400,
+        )
+
+    if direction and not direction in ["asc", "desc"]:
+        return (
+            jsonify({"error": "Direction only supports the orders acs and desc"}),
+            400,
+        )
+
+    if sort and direction:
+        return jsonify(get_sorted_posts(sort, direction)), 200
+
+    return jsonify(POSTS), 200
 
 
 @app.route("/api/posts", methods=["POST"])
@@ -70,7 +112,7 @@ def add_post():
     new_id = get_new_id()
     new_post = {"id": new_id, "title": title, "content": content}
     POSTS.append(new_post)
-    return jsonify(new_post), 200
+    return jsonify(new_post), 201
 
 
 @app.route("/api/posts/<int:id>", methods=["PUT"])
@@ -113,6 +155,10 @@ def delete_post(id):
 
 @app.route("/api/posts/search", methods=["GET"])
 def search():
+    """
+    Route for searching the title or the content
+    """
+
     search_title = request.args.get("title", "")
     search_content = request.args.get("content", "")
 

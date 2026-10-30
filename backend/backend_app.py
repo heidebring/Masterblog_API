@@ -24,6 +24,26 @@ def get_post_by_id(id):
         return post[0]
 
 
+def get_filtered_posts(title_search, content_search):
+    """
+    Gets the filtered posts where the title includes the title_search or
+    the content includes the content_search. Both fields are optional
+    """
+
+    filtered_posts = []
+    for post in POSTS:
+        if title_search:
+            if title_search in post["title"]:
+                filtered_posts.append(post)
+        elif content_search:
+            if content_search in post["content"]:
+                filtered_posts.append(post)
+        else:
+            filtered_posts.append(post)
+
+    return filtered_posts
+
+
 @app.route("/api/posts", methods=["GET"])
 def get_posts():
     """Returns all posts"""
@@ -89,6 +109,14 @@ def delete_post(id):
 
     POSTS.remove(post)
     return jsonify({"message": f"Post with id {id} has been deleted sucessfully"}), 200
+
+
+@app.route("/api/posts/search", methods=["GET"])
+def search():
+    search_title = request.args.get("title", "")
+    search_content = request.args.get("content", "")
+
+    return jsonify(get_filtered_posts(search_title, search_content)), 200
 
 
 if __name__ == "__main__":

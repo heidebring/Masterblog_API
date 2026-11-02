@@ -1,5 +1,11 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from helper import (
+    get_new_id,
+    get_post_by_id,
+    get_filtered_posts,
+    get_sorted_posts,
+)
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -8,51 +14,6 @@ POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
     {"id": 2, "title": "Second post", "content": "This is the second post."},
 ]
-
-
-def get_new_id():
-    """Returns a new id, the max id + 1"""
-
-    return max(post["id"] for post in POSTS) + 1
-
-
-def get_post_by_id(id):
-    """Return the post with the given id"""
-
-    post = [post for post in POSTS if post["id"] == id]
-    if len(post) > 0:
-        return post[0]
-
-
-def get_filtered_posts(title_search, content_search):
-    """
-    Gets the filtered posts where the title includes the title_search or
-    the content includes the content_search. Both fields are optional.
-    """
-
-    filtered_posts = []
-    for post in POSTS:
-        if title_search:
-            if title_search in post["title"]:
-                filtered_posts.append(post)
-        elif content_search:
-            if content_search in post["content"]:
-                filtered_posts.append(post)
-        else:
-            filtered_posts.append(post)
-
-    return filtered_posts
-
-
-def get_sorted_posts(sort, direction):
-    """
-    Sorts the posts according to sort and direction and returns them.
-    """
-
-    sorted_posts = sorted(
-        POSTS, key=lambda post: post[sort], reverse=(direction == "desc")
-    )
-    return sorted_posts
 
 
 @app.route("/api/posts", methods=["GET"])
@@ -88,7 +49,7 @@ def get_posts():
         )
 
     if sort and direction:
-        return jsonify(get_sorted_posts(sort, direction)), 200
+        return jsonify(get_sorted_posts(sort, direction, POSTS)), 200
 
     return jsonify(POSTS), 200
 
@@ -109,7 +70,7 @@ def add_post():
     if not content:
         return jsonify({"error": "Content is missing"}), 400
 
-    new_id = get_new_id()
+    new_id = get_new_id(POSTS)
     new_post = {"id": new_id, "title": title, "content": content}
     POSTS.append(new_post)
     return jsonify(new_post), 201
@@ -126,7 +87,7 @@ def update_post(id):
     title = data.get("title", "")
     content = data.get("content", "")
 
-    post = get_post_by_id(id)
+    post = get_post_by_id(id, POSTS)
     if not post:
         return jsonify({"error": f"Post with id {id} cannot be found"}), 404
 
@@ -145,7 +106,7 @@ def delete_post(id):
     404 if the post with the given id cannot be found.
     """
 
-    post = get_post_by_id(id)
+    post = get_post_by_id(id, POSTS)
     if not post:
         return jsonify({"error": f"Post with id {id} cannot be found"}), 404
 
@@ -162,7 +123,7 @@ def search():
     search_title = request.args.get("title", "")
     search_content = request.args.get("content", "")
 
-    return jsonify(get_filtered_posts(search_title, search_content)), 200
+    return jsonify(get_filtered_posts(search_title, search_content, POSTS)), 200
 
 
 if __name__ == "__main__":
